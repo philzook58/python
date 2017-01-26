@@ -1,5 +1,10 @@
 import numpy as np
 
+#Some things to do
+# 1. implement solovay-ktaev
+# 2. Try adding poisition information and winding
+# 3. stratified basis pursuit
+
 Id = 0
 Tau = 1
 
@@ -7,6 +12,8 @@ amp = 1.
 vacuumtree =   { leaves : [Id] , stalk: [Id,Id]    } # _|_
 # Stalk always has one more element than leaf
 examplevector = [( amp , exampletree )]
+
+
 
 
 def N(a,b,c): # number of ways a and b can combine into c. We'll work with ising for now where always 0 or 1
