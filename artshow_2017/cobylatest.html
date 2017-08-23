@@ -1,0 +1,69 @@
+<html>
+
+<script type="text/javascript" src="JSCobylaDistrib/Cobyla.js"></script>
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+
+<script type="text/javascript">
+
+
+
+function makeMatrix(x, y, z ){
+	var quaternion = new THREE.Quaternion();
+	quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ), 0 );
+
+	var scale = new THREE.Vector4( 1, 1, 1, 1 );
+	var position =  new THREE.Vector3( x, y, z );
+
+	var m = new THREE.Matrix4();
+	m.compose( position, quaternion, scale )
+
+	console.log(m.elements)
+	return m
+
+}
+
+var m1 = makeMatrix(-10., 0, 10);
+var m2 = makeMatrix(10., 0, 10);
+
+var m3 = new THREE.Matrix4();
+m3.getInverse(m2)
+m1.premultiply(m2)
+console.log(m1.elements)
+
+
+function(a, b , c, x, y, z)
+	a = x[0],
+	b = x[1] 
+	c = x[2]
+	x = x[3]
+	y = x[4] 
+	z = x[5]
+
+nmarkers = 20
+function zeros
+A.push()
+
+var n=2; 			// + of variables
+var x=new Array(n);
+var m=2; 			// number of constraints
+var rhobeg = 5.0;	// Various Cobyla constants, see Cobyla docs in Cobyja.js
+var rhoend = 1.0e-6;
+var iprint = 0;
+var maxfun = 3500;
+
+function test(n,m,x,con) {  	// objective function
+   con[0]=x[0]*x[0]+x[1]*x[1]-1 		// first inequality constraint
+   con[1]=-(x[0]*x[0]+x[1]*x[1]-1)	// second inequality constraint, together an equality constraint
+   return (x[0]-5)*(x[0]-5)+(x[1]-5)*(x[1]-5); // objective function 
+   }
+x[0]=-7.9; x[1]=3.2;
+var r=FindMinimum(test, n,  m, x, rhobeg, rhoend,  iprint,  maxfun);
+document.write("Result="+x);
+</script>
+
+<body>
+</body>
+
+</html>

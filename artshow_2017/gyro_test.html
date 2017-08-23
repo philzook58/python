@@ -1,0 +1,80 @@
+<html>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"> </script>
+
+<body>
+<div id="gamma"> </div>
+</body>
+
+<script>
+
+
+
+
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+var renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+var cube = new THREE.Mesh( geometry, material );
+//scene.add( cube );
+
+
+var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+var acccube = new THREE.Mesh( geometry, material );
+scene.add( acccube );
+
+camera.position.z = 5;
+
+window.addEventListener("deviceorientation", handleOrientation, true);
+
+function handleOrientation(event) {
+  var absolute = event.absolute;
+  var alpha    = event.alpha;
+  var beta     = event.beta;
+  var gamma    = event.gamma;
+  // Do stuff with the new orientation data
+//var g = document.getElementById('gamma')
+//g.innerHTML = gamma;
+cube.rotation.y = gamma/180 * Math.PI;
+cube.rotation.x = -beta/180 * Math.PI;
+cube.rotation.z = -alpha/180 * Math.PI;
+}
+
+var vel = new THREE.Vector3(0,0,0);
+window.addEventListener("devicemotion", handleMotion, true);
+
+
+
+function handleMotion(event) {
+  var acc = event.acceleration;
+  var dt = event.interval /// 1000;
+  var accvec = new THREE.Vector3(acc.x,acc.y,acc.z)
+  accvec.multiplyScalar(dt)
+  console.log(vel);
+  vel.add(accvec);
+acccube.position.addScaledVector(vel, dt);
+var g = document.getElementById('gamma')
+g.innerHTML = dt//JSON.stringify(acc);//"fred";
+
+
+}
+
+
+
+
+function render() {
+	requestAnimationFrame( render );
+	renderer.render( scene, camera );
+}
+render();
+</script>
+
+
+
+</html>

@@ -37,9 +37,6 @@ def leftFMove(tree):
 
 
 
-
-
-
 	#organized by root then leaves
 	#There are only 4 special cases. Otherwise just fix the inner edge to copmply with
 	#fusion rules and returns a 1.
@@ -69,5 +66,30 @@ def leftFMove(tree):
 		return HashVect({tuple(tree): 1.0})
 	tree = tuple(tree)
 	return HashVect({tree: 1.0}) 
+
+
+#suppose v is a hashvect
+def makesiblings2(tree,a,b):
+	if a[path[0]] == b[path[0]]:
+		if a[path[0]] == 'L':
+			v = traversepath(tree[0])
+			return v.keymap(lambda k: (k, tree[1], tree[2]))
+		else:
+			v = traversepath(tree[2])
+			return v.keymap(lambda k: (tree[0], tree[1], k))
+	v = HashVect({tree:1.0})
+	v = v.bind(recurseLeftF)
+	v = v.bind(recurseRightF)
+	return v
+
+
+
+
+def makeleavesiblings(tree, n):
+	a = pathtoNLeaf(n)
+	b = pathtoNLeaf(n+1)
+	return makesiblings2(tree,a,b)
+
+
 
 

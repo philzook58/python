@@ -1,0 +1,257 @@
+<html>
+
+<body>
+<!--<video></video> -->
+</body>
+<script type="text/javascript" src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+
+<script type="text/javascript" src="artoolkit.min.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+
+
+<script type="text/javascript">
+
+
+var arController;
+var video;
+
+ function setUpARController(video){
+ 	  arController = new ARController(video, 'camera_para2.dat');
+		arController.onload = function() {
+			console.log('ARController ready for use', arController);
+			setUpThreeJs();
+
+			arController.setPatternDetectionMode( artoolkit.AR_MATRIX_CODE_DETECTION );
+
+			console.log("Got this far");
+			arController.addEventListener('getMarker', function(ev) {
+				//console.log("saw a tag");
+				var barcodeId = ev.data.marker.idMatrix;
+				if (barcodeId !== -1) {
+					//console.log(ev.data.marker)
+					//console.log("saw a barcode marker with id", barcodeId);
+
+					// Note that you need to copy the values of the transformation matrix,
+					var transform = ev.data.matrix;
+					if(barcodeId == 1){
+						//console.log([transform[12], transform[13], transform[14]]);
+						if(camera){
+							//console.log("cube set")
+							//cube.matrix.elements.set(transform);
+							//cube.position.set( transform[12]/5, -1*transform[13]/5, -1 * transform[14] /5);
+							
+							var cubepos = new THREE.Matrix4()
+							//console.log(cubepos.elements)
+							cubepos.elements.set(transform);
+							//console.log(cubepos.elements)
+							
+							//cube.position.set( transform[12], transform[13], transform[14]);
+							/*
+							cube.setRotationFromMatrix(cubepos)
+								*/
+
+							var camerapos = new THREE.Matrix4()
+							camerapos.getInverse(cubepos)
+							var transform2 = camerapos.toArray()
+							//console.log(transform2)
+							camera.position.set(  transform2[12], transform2[13], transform2[14]);
+							//camera.position.set( - transform2[12], -transform2[13], -transform2[14]);
+							//cube.position.set( transform2[12], transform2[13], transform2[14]);
+							//camera.position.set( - transform[12],  -transform[13],  -transform[14]);
+							//camera.updateMatrix()
+							//camera.setRotationFromMatrix(cubepos)
+							camera.setRotationFromMatrix(camerapos)
+							camera.updateMatrix()
+
+							//camera.updateMatrix()
+							//cube.updateMatrix();
+						}
+						// z increase away from the camera
+						// x decreases moving to the right
+						// y decreases moving up
+					}
+					
+
+
+				}
+			});
+			//start processing loop
+			tick();
+		}
+
+ }
+
+
+
+	function setUpWebcam(){
+		/*
+		var constraints = { audio: false, video: { width: 1280, height: 720 } }; 
+
+		navigator.mediaDevices.getUserMedia(constraints)
+		.then(function(mediaStream) {
+		  video = document.querySelector('video');
+		  video.srcObject = mediaStream;
+
+		  // It is actually unclear to me is video is the right thing to hand in here
+		setUpARController(video);
+
+
+		  video.onloadedmetadata = function(e) {
+		    video.play();
+		  };
+		})
+		.catch(function(err) { console.log(err.name + ": " + err.message); }); // always check for errors at the end.
+	
+		*/
+		// arcontroller is making a html5 video object
+		// tap to start
+		video = ARController.getUserMedia({
+			maxARVideoSize: 320, // do AR processing on scaled down video of this size
+			facingMode: "environment",
+			onSuccess: function(video) {
+				console.log('got video', video);
+				setUpARController(video);
+				
+			}
+		});
+
+
+
+
+};
+
+
+var renderer;
+var scene;
+var camera;
+var videoScene;
+var videoCamera; 
+var cube;
+
+
+
+function setUpThreeJs(){
+	scene = new THREE.Scene();
+	// fov is angle allowed, aspect is ration x gto y and near and far viewing plane
+	// default position is z = 5
+	//  camera is pointing down negative z axis
+	// up is positive y - 3 is about limit of seeing at z = 0
+	// right in positive x
+	//camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+	camera = new THREE.Camera();
+	camera.matrixAutoUpdate = false;
+	camera.projectionMatrix.elements.set(arController.getCameraMatrix());
+	scene.add(camera);
+	console.log(camera.projectionMatrix)
+	//camera.projectionMatrix.elements[]  = 2;
+
+
+	renderer = new THREE.WebGLRenderer({ antialias: true });
+	renderer.setSize(video.videoWidth, video.videoHeight);
+	//renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild( renderer.domElement );
+
+var light = new THREE.PointLight(0xffffff);
+light.position.set(400, 500, 100);
+scene.add(light);
+var light = new THREE.PointLight(0xffffff);
+light.position.set(-400, -500, -100);
+scene.add(light);
+
+	var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+	
+	//var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+	var material = new THREE.MeshLambertMaterial({ color: 0xffffff, wireframe: false })
+	cube = new THREE.Mesh( geometry, material );
+	//console.log(cube);
+	//console.log(camera);
+	//cube.matrixAutoUpdate = false;
+	scene.add( cube );
+	
+
+	//camera.position.z = -5;
+
+
+	
+
+	// This was typo or changed pai in docs?
+	var videoTex = new THREE.VideoTexture(video);
+
+	videoTex.minFilter = THREE.LinearFilter;
+
+
+	videoTex.flipY = false;
+
+
+	var plane = new THREE.Mesh(
+	  new THREE.PlaneBufferGeometry(2, 2),
+	  new THREE.MeshBasicMaterial({map: videoTex, side: THREE.DoubleSide})
+	);
+
+	plane.material.depthTest = false;
+	plane.material.depthWrite = false;
+
+
+	videoScene = new THREE.Scene();
+	videoCamera = new THREE.OrthographicCamera(-1, 1, -1, 1, -1, 1);
+	videoScene.add(videoCamera);
+	videoScene.add(plane);
+
+	// Set the renderer autoClear to false, otherwise it
+	// clears the canvas before each render call.
+	renderer.autoClear = false;
+}
+
+	
+
+	setUpWebcam();
+
+
+
+	function tick(){
+		requestAnimationFrame(tick);
+
+		arController.process(video);
+	
+		renderer.render( videoScene, videoCamera );
+
+
+		renderer.render( scene, camera );
+		//console.log(camera);
+		//	console.log(cube);
+
+
+	}
+
+	document.body.onkeyup = function(e){
+    if(e.keyCode == 32){
+        //your code
+        var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+	
+	//var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+	var material = new THREE.MeshLambertMaterial({ color: 0xffffff, wireframe: false })
+	var cube2 = new THREE.Mesh( geometry, material );
+	cube2.position.z = camera.position.z;
+	cube2.position.y = camera.position.y;
+	cube2.position.x = camera.position.x;
+	//cube.position.z 
+
+	scene.add(cube2)
+	console.log(camera.position)
+
+	console.log("CUBE ADDED")
+
+    }
+}
+
+
+
+
+</script>
+
+
+
+
+</html>

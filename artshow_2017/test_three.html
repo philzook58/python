@@ -1,0 +1,73 @@
+<html>
+
+<body>
+</body>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+
+
+<script type="text/javascript">
+	
+
+	var renderer;
+var scene;
+var camera;
+var cube;
+
+var video;
+/*
+	function setUpWebcam(){
+		var constraints = { audio: false, video: { width: 1280, height: 720 } }; 
+
+		navigator.mediaDevices.getUserMedia(constraints)
+		.then(function(mediaStream) {
+		  video = document.querySelector('video');
+		  video.srcObject = mediaStream;
+		  video.onloadedmetadata = function(e) {
+		    video.play();
+		  };
+		})
+		.catch(function(err) { console.log(err.name + ": " + err.message); }); // always check for errors at the end.
+	}
+
+	setUpWebcam();
+	*/
+
+
+function setUpThreeJs(){
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+	renderer = new THREE.WebGLRenderer();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+	var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+	cube = new THREE.Mesh( geometry, material );
+	scene.add( cube );
+	console.log(cube);
+	cube.position.x = 3 ;
+	camera.position.z = 5;
+
+	tick();
+
+
+
+}
+
+
+	setUpThreeJs();
+
+	function tick(){
+		requestAnimationFrame(tick);
+
+		renderer.render( scene, camera );
+
+
+	}
+
+</script>
+
+
+</html>

@@ -1,0 +1,222 @@
+<html>
+
+<body>
+<!--<video></video> -->
+</body>
+<script type="text/javascript" src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+
+<script type="text/javascript" src="artoolkit.min.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+
+
+
+<script type="text/javascript">
+
+
+var arController;
+var video;
+
+ function setUpARController(video){
+ 	  arController = new ARController(video, 'camera_para.dat');
+		arController.onload = function() {
+			console.log('ARController ready for use', arController);
+			setUpThreeJs();
+
+			arController.setPatternDetectionMode( artoolkit.AR_MATRIX_CODE_DETECTION );
+
+			console.log("Got this far");
+
+			//start processing loop
+			tick();
+		}
+
+ }
+
+
+
+	function setUpWebcam(){
+
+		video = ARController.getUserMedia({
+			maxARVideoSize: 320, // do AR processing on scaled down video of this size
+			facingMode: "environment",
+			onSuccess: function(video) {
+				console.log('got video', video);
+				setUpARController(video);
+				
+			}
+		});
+
+
+};
+
+
+var renderer;
+var scene;
+var camera;
+var videoScene;
+var videoCamera; 
+var cube;
+
+
+
+function setUpThreeJs(){
+	scene = new THREE.Scene();
+	// fov is angle allowed, aspect is ration x gto y and near and far viewing plane
+	// default position is z = 5
+	//  camera is pointing down negative z axis
+	// up is positive y - 3 is about limit of seeing at z = 0
+	// right in positive x
+	//camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+	camera = new THREE.Camera();
+	camera.matrixAutoUpdate = false;
+	camera.projectionMatrix.elements.set(arController.getCameraMatrix());
+	scene.add(camera);
+
+	renderer = new THREE.WebGLRenderer({ antialias: true });
+	renderer.setSize(video.videoWidth, video.videoHeight);
+	document.body.appendChild( renderer.domElement );
+
+	var light = new THREE.PointLight(0xffffff);
+	light.position.set(400, 500, 100);
+	scene.add(light);
+	var light = new THREE.PointLight(0xffffff);
+	light.position.set(-400, -500, -100);
+	scene.add(light);
+
+	var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+	
+	//var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+	var material = new THREE.MeshLambertMaterial({ color: 0xffffff, wireframe: false })
+	cube = new THREE.Mesh( geometry, material );
+	cube.position.z = 2;
+	cube.rotation.x = 10;
+	cube.rotation.y = 10;
+	console.log(cube);
+	console.log(camera);
+	//cube.matrixAutoUpdate = false;
+	scene.add( cube );
+	
+
+	//camera.position.z = -5;
+
+
+	
+
+	// This was typo or changed pai in docs?
+	var videoTex = new THREE.VideoTexture(video);
+
+	videoTex.minFilter = THREE.LinearFilter;
+
+
+	videoTex.flipY = false;
+
+
+	var plane = new THREE.Mesh(
+	  new THREE.PlaneBufferGeometry(2, 2),
+	  new THREE.MeshBasicMaterial({map: videoTex, side: THREE.DoubleSide})
+	);
+
+	plane.material.depthTest = false;
+	plane.material.depthWrite = false;
+
+
+	videoScene = new THREE.Scene();
+	videoCamera = new THREE.OrthographicCamera(-1, 1, -1, 1, -1, 1);
+	videoScene.add(videoCamera);
+	videoScene.add(plane);
+
+	// Set the renderer autoClear to false, otherwise it
+	// clears the canvas before each render call.
+	renderer.autoClear = false;
+}
+
+	
+
+	setUpWebcam();
+
+
+
+	function tick(){
+		requestAnimationFrame(tick);
+
+		//arController.process(video);
+		arController.detectMarker(video);
+
+		var markerMatrix = new Float32Array(12);
+		var glMatrix = new Float32Array(16);
+
+		// Get the number of markers from the ARController and iterate over each marker.
+		var largestArea = 0;
+		var maxIndex;
+		var markers = arController.getMarkerNum();
+		//console.log(markers.length)
+
+		for (var i=0; i < markers; i++) {
+
+			var marker = arController.getMarker(i);
+			if(marker.idMatrix > -1){
+			//console.log(marker);
+			if (marker.area > largestArea){
+				maxIndex = marker.idMatrix;
+				largestArea = marker.area;
+
+				arController.getTransMatSquare(i, 1 /* marker width */, markerMatrix);
+
+
+				arController.transMatToGLMat(markerMatrix, glMatrix);
+
+
+
+			}
+		}
+	}
+
+		if(largestArea){
+			//console.log(maxIndex);
+
+			var tagpos = new THREE.Matrix4()
+
+			tagpos.elements.set(glMatrix);
+			var relativeTagPos =  new THREE.Matrix4()
+			relativeTagPos.makeTranslation( -1* (maxIndex%4)*7/4 , Math.floor(maxIndex/4)*7/4, 0 );
+			//relativeTagPos.makeTranslation(  Math.floor(maxIndex/4)*7/8, (maxIndex%4)*7/8 , 0 );
+			console.log( glMatrix[12], glMatrix[13], glMatrix[14]);
+			tagpos.multiply(relativeTagPos);
+
+
+			var camerapos = new THREE.Matrix4()
+			camerapos.getInverse(tagpos)
+			var transform2 = camerapos.toArray()
+			camera.position.set(  transform2[12], transform2[13], transform2[14]);
+
+			camera.setRotationFromMatrix(camerapos)
+			camera.updateMatrix()
+
+		}
+
+
+
+
+	
+		renderer.render( videoScene, videoCamera );
+
+
+		renderer.render( scene, camera );
+		//	console.log(cube);
+
+
+	}
+
+
+
+
+
+
+</script>
+
+
+
+
+</html>
